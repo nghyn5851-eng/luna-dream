@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { auth, db } from '../services/firebase';
+import { auth, db, handleFirestoreError, OperationType } from '../services/firebase';
 import { UserProfile } from '../types';
 
 interface AuthContextType {
@@ -22,29 +22,41 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       setUser(firebaseUser);
       if (firebaseUser) {
-        const docRef = doc(db, 'users', firebaseUser.uid);
-        const docSnap = await getDoc(docRef);
-        
-        if (docSnap.exists()) {
-          const data = docSnap.data() as UserProfile;
-          if (data.email === 'nghyn5851@gmail.com' && data.role !== 'admin') {
-            const updatedProfile = { ...data, role: 'admin' as const };
-            await setDoc(docRef, updatedProfile, { merge: true });
-            setProfile(updatedProfile);
-          } else {
-            setProfile(data);
+        try {
+          const docRef = doc(db, 'users', firebaseUser.uid);
+          const docSnap = await getDoc(docRef);
+          
+          let isActuallyAdmin = false;
+          try {
+            const adminSnap = await getDoc(doc(db, 'admins', firebaseUser.uid));
+            isActuallyAdmin = adminSnap.exists();
+          } catch (e) {
+            console.warn('Could not check admin status, assuming non-admin');
           }
-        } else {
-          // Create basic profile if it doesn't exist
-          const newProfile: UserProfile = {
-            uid: firebaseUser.uid,
-            email: firebaseUser.email || '',
-            fullName: firebaseUser.displayName || 'Khách hàng',
-            role: firebaseUser.email === 'nghyn5851@gmail.com' ? 'admin' : 'customer',
-            createdAt: new Date().toISOString()
-          };
-          await setDoc(docRef, newProfile);
-          setProfile(newProfile);
+          
+          if (docSnap.exists()) {
+            const data = docSnap.data() as UserProfile;
+            if (isActuallyAdmin && data.role !== 'admin') {
+              const updatedProfile = { ...data, role: 'admin' as const };
+              await setDoc(docRef, updatedProfile, { merge: true });
+              setProfile(updatedProfile);
+            } else {
+              setProfile(data);
+            }
+          } else {
+            // Create basic profile if it doesn't exist
+            const newProfile: UserProfile = {
+              uid: firebaseUser.uid,
+              email: firebaseUser.email || '',
+              fullName: firebaseUser.displayName || 'Khách hàng',
+              role: isActuallyAdmin ? 'admin' : 'customer',
+              createdAt: new Date().toISOString()
+            };
+            await setDoc(docRef, newProfile);
+            setProfile(newProfile);
+          }
+        } catch (error) {
+          handleFirestoreError(error, OperationType.GET, `users/${firebaseUser.uid}`);
         }
       } else {
         setProfile(null);

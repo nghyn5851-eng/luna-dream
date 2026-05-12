@@ -6,7 +6,7 @@ import { useCart } from '../context/CartContext';
 import { Product } from '../types';
 import ProductCard from '../components/ProductCard';
 import { doc, getDoc, collection, getDocs, query, where, limit } from 'firebase/firestore';
-import { db } from '../services/firebase';
+import { db, handleFirestoreError, OperationType } from '../services/firebase';
 
 const ProductDetail: React.FC = () => {
   const { id } = useParams();
@@ -32,20 +32,24 @@ const ProductDetail: React.FC = () => {
           }
 
           // Fetch related
-          const relatedQuery = query(
-            collection(db, 'products'),
-            where('category', '==', productData.category),
-            limit(5)
-          );
-          const relatedSnap = await getDocs(relatedQuery);
-          const related = relatedSnap.docs
-            .map(d => ({ id: d.id, ...d.data() } as Product))
-            .filter(p => p.id !== id)
-            .slice(0, 4);
-          setRelatedProducts(related);
+          try {
+            const relatedQuery = query(
+              collection(db, 'products'),
+              where('category', '==', productData.category),
+              limit(5)
+            );
+            const relatedSnap = await getDocs(relatedQuery);
+            const related = relatedSnap.docs
+              .map(d => ({ id: d.id, ...d.data() } as Product))
+              .filter(p => p.id !== id)
+              .slice(0, 4);
+            setRelatedProducts(related);
+          } catch (relatedErr) {
+            console.warn('Error fetching related products:', relatedErr);
+          }
         }
       } catch (err) {
-        console.error('Error fetching product:', err);
+        handleFirestoreError(err, OperationType.GET, `products/${id}`);
       } finally {
         setLoading(false);
       }

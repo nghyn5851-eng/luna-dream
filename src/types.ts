@@ -3,12 +3,14 @@ export interface Product {
   name: string;
   price: number;
   description: string;
-  category: 'Nhẫn tinh tú' | 'Dây chuyền' | 'Charm hành tinh';
+  category: string;
   imageUrl: string;
   sizes: string[];
   stock: number;
   featured?: boolean;
   highlighted?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface CartItem extends Product {

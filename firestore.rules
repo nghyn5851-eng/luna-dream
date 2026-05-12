@@ -12,9 +12,7 @@ service cloud.firestore {
     }
 
     function isAdmin() {
-      return isSignedIn() && 
-        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+      return isSignedIn() && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
     }
 
     function isOwner(userId) {
@@ -33,27 +31,37 @@ service cloud.firestore {
     function isValidProduct(data) {
       return data.name is string && data.name.size() > 0 && data.name.size() < 200 &&
              data.price is number && data.price >= 0 &&
-             data.category in ['Nhẫn tinh tú', 'Dây chuyền', 'Charm hành tinh'] &&
+             data.category is string && data.category.size() > 0 &&
              data.imageUrl is string &&
-             data.description is string;
+             data.description is string &&
+             data.stock is number && data.stock >= 0 &&
+             (data.createdAt == null || data.createdAt is string) &&
+             (data.updatedAt == null || data.updatedAt is string);
     }
 
     function isValidUser(data) {
       return data.email is string && data.email.size() > 0 &&
-             data.role in ['customer', 'admin'];
+             data.role in ['customer', 'admin'] &&
+             data.fullName is string;
     }
 
     function isValidOrder(data) {
       return data.userId == request.auth.uid &&
              data.items is list &&
              data.totalAmount is number &&
+             data.status in ['Processing', 'Shipped', 'Delivered', 'Cancelled'] &&
              data.customerInfo is map;
     }
 
     function isValidSettings(data) {
       return data.heroTitle is string &&
              data.heroSubtitle is string &&
-             data.heroImage is string;
+             data.heroImage is string &&
+             data.philosophyTitle is string &&
+             data.philosophyText is string &&
+             data.contactEmail is string &&
+             data.contactPhone is string &&
+             data.contactAddress is string;
     }
 
     // Products
@@ -73,15 +81,14 @@ service cloud.firestore {
     // Users
     match /users/{userId} {
       allow read: if isOwner(userId) || isAdmin();
-      allow create: if isOwner(userId) && (
-        incoming().role == 'customer' || 
-        request.auth.token.email == 'nghyn5851@gmail.com'
-      ) && isValidUser(incoming());
-      allow update: if (isOwner(userId) && (
-        incoming().role == existing().role ||
-        request.auth.token.email == 'nghyn5851@gmail.com'
-      )) || isAdmin();
+      allow create: if isOwner(userId) && (incoming().role == 'customer' || (incoming().role == 'admin' && isAdmin())) && isValidUser(incoming());
+      allow update: if (isOwner(userId) && incoming().role == existing().role) || isAdmin();
       allow delete: if isAdmin();
+    }
+
+    // Admins
+    match /admins/{adminId} {
+      allow read: if isOwner(adminId);
     }
 
     // Settings

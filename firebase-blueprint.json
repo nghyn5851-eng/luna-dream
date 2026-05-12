@@ -72,6 +72,15 @@
       "schema": "user",
       "description": "Store user profiles"
     },
+    "admins": {
+      "schema": {
+        "type": "object",
+        "properties": {
+          "email": { "type": "string" }
+        }
+      },
+      "description": "Stores admin UIDs as document IDs to grant administrative privileges"
+    },
     "settings": {
       "schema": "websiteSettings",
       "description": "Store global website settings"

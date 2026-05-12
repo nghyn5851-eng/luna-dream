@@ -3,8 +3,8 @@ import { useSearchParams } from 'react-router-dom';
 import { Search, Filter, X, ChevronDown, PackageOpen } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import ProductCard from '../components/ProductCard';
-import { collection, getDocs } from 'firebase/firestore';
-import { db } from '../services/firebase';
+import { collection, getDocs, query, where, limit } from 'firebase/firestore';
+import { db, handleFirestoreError, OperationType } from '../services/firebase';
 import { Product } from '../types';
 
 const Products: React.FC = () => {
@@ -21,11 +21,16 @@ const Products: React.FC = () => {
 
   useEffect(() => {
     const fetchProducts = async () => {
-      const q = collection(db, 'products');
-      const querySnapshot = await getDocs(q);
-      const data = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Product));
-      setAllProducts(data);
-      setLoading(false);
+      try {
+        const q = collection(db, 'products');
+        const querySnapshot = await getDocs(q);
+        const data = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Product));
+        setAllProducts(data);
+      } catch (error) {
+        handleFirestoreError(error, OperationType.GET, 'products');
+      } finally {
+        setLoading(false);
+      }
     };
     fetchProducts();
   }, []);

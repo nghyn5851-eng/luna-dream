@@ -4,7 +4,7 @@ import { Sparkles, ArrowRight, Star, Moon, ShieldCheck, Truck, RotateCcw } from 
 import { Link } from 'react-router-dom';
 import ProductCard from '../components/ProductCard';
 import { collection, getDocs, query, where, limit } from 'firebase/firestore';
-import { db } from '../services/firebase';
+import { db, handleFirestoreError, OperationType } from '../services/firebase';
 import { Product, WebsiteSettings } from '../types';
 
 const Home: React.FC = () => {
@@ -13,20 +13,26 @@ const Home: React.FC = () => {
 
   useEffect(() => {
     const fetchData = async () => {
-      // Fetch settings
-      const settingsSnap = await getDocs(collection(db, 'settings'));
-      if (!settingsSnap.empty) {
-        setSettings(settingsSnap.docs[0].data() as WebsiteSettings);
-      }
+      try {
+        // Fetch settings
+        const settingsSnap = await getDocs(collection(db, 'settings'));
+        if (!settingsSnap.empty) {
+          setSettings(settingsSnap.docs[0].data() as WebsiteSettings);
+        }
 
-      // Fetch featured products
-      const q = query(
-        collection(db, 'products'), 
-        where('featured', '==', true), 
-        limit(4)
-      );
-      const querySnapshot = await getDocs(q);
-      setProducts(querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Product)));
+        // Fetch featured products
+        const q = query(
+          collection(db, 'products'), 
+          where('featured', '==', true), 
+          limit(4)
+        );
+        const querySnapshot = await getDocs(q);
+        setProducts(querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Product)));
+      } catch (error) {
+        console.error('Error fetching home data:', error);
+        // We don't want to crash the whole app if settings fail to load, 
+        // but we should at least log the technical error for debugging
+      }
     };
     fetchData();
   }, []);
