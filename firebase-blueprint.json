@@ -1,0 +1,80 @@
+{
+  "entities": {
+    "product": {
+      "title": "Product",
+      "description": "A sleepwear product in the LUNA store",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "price": { "type": "number" },
+        "description": { "type": "string" },
+        "category": { "type": "string", "enum": ["Pajama", "Váy ngủ", "Đồ mặc nhà"] },
+        "imageUrl": { "type": "string" },
+        "sizes": { "type": "array", "items": { "type": "string" } },
+        "stock": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "price", "category", "imageUrl"]
+    },
+    "order": {
+      "title": "Order",
+      "description": "An order placed by a customer",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "items": { "type": "array" },
+        "totalAmount": { "type": "number" },
+        "status": { "type": "string", "enum": ["pending", "processing", "shipped", "delivered", "cancelled"] },
+        "customerInfo": { "type": "object" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "items", "totalAmount", "status", "customerInfo"]
+    },
+    "user": {
+      "title": "User",
+      "description": "User profile data",
+      "type": "object",
+      "properties": {
+        "email": { "type": "string" },
+        "fullName": { "type": "string" },
+        "role": { "type": "string", "enum": ["customer", "admin"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["email", "role"]
+    },
+    "websiteSettings": {
+      "title": "Website Settings",
+      "description": "Global website configuration and content",
+      "type": "object",
+      "properties": {
+        "heroTitle": { "type": "string" },
+        "heroSubtitle": { "type": "string" },
+        "heroImage": { "type": "string" },
+        "philosophyTitle": { "type": "string" },
+        "philosophyText": { "type": "string" },
+        "contactEmail": { "type": "string" },
+        "contactPhone": { "type": "string" },
+        "contactAddress": { "type": "string" }
+      }
+    }
+  },
+  "firestore": {
+    "products": {
+      "schema": "product",
+      "description": "Store available products"
+    },
+    "orders": {
+      "schema": "order",
+      "description": "Store customer orders"
+    },
+    "users": {
+      "schema": "user",
+      "description": "Store user profiles"
+    },
+    "settings": {
+      "schema": "websiteSettings",
+      "description": "Store global website settings"
+    }
+  }
+}
